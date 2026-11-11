@@ -1,0 +1,28 @@
+name: Test install
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  install:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Scoop
+        shell: pwsh
+        run: |
+          Invoke-RestMethod get.scoop.sh -OutFile install.ps1
+          .\install.ps1 -RunAsAdmin
+          "$env:USERPROFILE\scoop\shims" | Out-File -Append $env:GITHUB_PATH
+      - name: Install Noteriv from this checkout
+        shell: pwsh
+        run: |
+          scoop install .\bucket\noteriv.json
+          $exe = "$env:USERPROFILE\scoop\apps\noteriv\current\noteriv.exe"
+          if (-not (Test-Path $exe)) { Write-Error "noteriv.exe missing"; exit 1 }
+          "Installed $((Get-Item $exe).VersionInfo.ProductVersion) at $exe"
+          if (-not (Test-Path "$env:USERPROFILE\scoop\apps\noteriv\current\portable.txt")) { Write-Error "portable marker missing"; exit 1 }
