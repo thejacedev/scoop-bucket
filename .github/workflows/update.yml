@@ -1,0 +1,65 @@
+name: Update manifest
+
+# Runs when the Noteriv release workflow pings this repo, once a day as a
+# fallback, or by hand. Installs the new version before committing it.
+on:
+  repository_dispatch:
+    types: [noteriv-release]
+  schedule:
+    - cron: "23 5 * * *"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Noteriv version, e.g. 2.4.9. Blank = latest release."
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-manifest
+
+jobs:
+  update:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update the manifest
+        id: update
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WANT: ${{ github.event.inputs.version || github.event.client_payload.version }}
+        run: bash ./update.sh "$WANT"
+
+      - name: Install Scoop
+        if: steps.update.outputs.changed == 'true'
+        shell: pwsh
+        run: |
+          Invoke-RestMethod get.scoop.sh -OutFile install.ps1
+          .\install.ps1 -RunAsAdmin
+          Remove-Item install.ps1
+          "$env:USERPROFILE\scoop\shims" | Out-File -Append $env:GITHUB_PATH
+
+      - name: Install the new version
+        if: steps.update.outputs.changed == 'true'
+        shell: pwsh
+        run: |
+          scoop install .\bucket\noteriv.json
+          $exe = "$env:USERPROFILE\scoop\apps\noteriv\current\noteriv.exe"
+          if (-not (Test-Path $exe)) { Write-Error "noteriv.exe missing"; exit 1 }
+          $got = (Get-Item $exe).VersionInfo.ProductVersion
+          "Installed $got"
+          if ($got -ne "${{ steps.update.outputs.version }}") { Write-Error "Expected ${{ steps.update.outputs.version }}"; exit 1 }
+
+      - name: Commit and push
+        if: steps.update.outputs.changed == 'true'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bucket/noteriv.json
+          git commit -m "Update Noteriv to ${{ steps.update.outputs.version }}"
+          git push
