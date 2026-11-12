@@ -1,12 +1,12 @@
 {
-    "version": "2.4.11",
+    "version": "2.4.12",
     "description": "Open-source markdown editor with graph view, plugins, themes, Git/WebDAV sync and an MCP server",
     "homepage": "https://www.noteriv.com",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/thejacedev/Noteriv/releases/download/v2.4.11/Noteriv-2.4.11-windows-x64-portable.zip",
-            "hash": "b9cf651a8d4a9426580a02d9c4bd4eb251ea22d3316035d01edf59417b0a3c79"
+            "url": "https://github.com/thejacedev/Noteriv/releases/download/v2.4.12/Noteriv-2.4.12-windows-x64-portable.zip",
+            "hash": "d93e3ffec38d7e104ad57e85959237ad5157a400ae6e28d59d2e9201646f9f83"
         }
     },
     "bin": "noteriv.exe",
